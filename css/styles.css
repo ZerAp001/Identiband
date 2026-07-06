@@ -1,0 +1,148 @@
+@charset "UTF-8";
+
+/* PALETA IDENTIBAND MEJORADA */
+:root {
+    --identi-bg: #0d1117;
+    --identi-card: #161b22;
+
+    --identi-primary: #00e5ff;
+    --identi-secondary: #ff00c8;
+    --identi-accent: #00ff88;
+
+    --identi-text: #ffffff;
+    --identi-muted: #8b949e;
+}
+
+/* BODY */
+body {
+    background: radial-gradient(circle at 20% 30%, rgba(0,229,255,0.15), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255,0,200,0.15), transparent 40%),
+                radial-gradient(circle at 50% 100%, rgba(0,255,136,0.10), transparent 50%),
+                #0d1117;
+    color: var(--identi-text) !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow-x: hidden;
+}
+
+/* BOTONES */
+.btn-identi {
+    background: linear-gradient(135deg, var(--identi-primary), var(--identi-secondary));
+    color: #000;
+    border: none;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.btn-identi:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 15px var(--identi-primary);
+}
+
+/* CARDS */
+.card {
+    border-radius: 12px;
+    background-color: var(--identi-card) !important;
+}
+
+/* TEXTOS */
+.text-info {
+    color: var(--identi-primary) !important;
+}
+
+.text-success {
+    color: var(--identi-accent) !important;
+}
+
+/* BADGES */
+.badge {
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+
+/* TABLAS */
+.table {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* INPUTS */
+.form-control,
+.form-select {
+    background-color: #0d1117;
+    color: white;
+    border: 1px solid #30363d;
+}
+
+.form-control:focus {
+    border-color: var(--identi-primary);
+    box-shadow: 0 0 8px var(--identi-primary);
+}
+
+/* ALERTAS */
+.alert {
+    border-radius: 10px;
+}
+
+/* EFECTOS */
+.card:hover {
+    transform: translateY(-3px);
+    transition: 0.2s;
+}
+/* Partículas flotantes */
+body::before {
+    content: "";
+    position: fixed;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background-image: radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    animation: moveParticles 60s linear infinite;
+    z-index: 0;
+}
+
+/* Glow animado */
+body::after {
+    content: "";
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(0,229,255,0.08), transparent 70%);
+    animation: pulseGlow 6s ease-in-out infinite;
+    z-index: 0;
+}
+
+/* Animaciones */
+@keyframes moveParticles {
+    from { transform: translate(0,0); }
+    to { transform: translate(200px,200px); }
+}
+
+@keyframes pulseGlow {
+    0%,100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+.card {
+    backdrop-filter: blur(10px);
+    background: rgba(22, 27, 34, 0.8) !important;
+    border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Permitir interacción encima de efectos */
+body::before,
+body::after {
+    pointer-events: none;
+}
+
+/* Asegurar que el contenido esté encima */
+.container, .card, form {
+    position: relative;
+    z-index: 2;
+}
+.logo-identiband{
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    border-radius: 50%;
+}
