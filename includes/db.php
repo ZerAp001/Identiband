@@ -1,4 +1,7 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 // Archivo para la conexión con MySQL configurado para Railway
 $host = getenv('DB_HOST');
 $user = getenv('DB_USER');
