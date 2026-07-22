@@ -9,16 +9,16 @@ if ($busqueda == '') {
     exit;
 }
 
-$query = "SELECT id_producto 
-          FROM productos 
-          WHERE nombre_modelo LIKE '%$busqueda%'
-          LIMIT 1";
+// 1. Preparamos la consulta con el marcador :busqueda
+$stmt = $conexion->prepare("SELECT id_producto FROM productos WHERE nombre_modelo LIKE :busqueda LIMIT 1");
 
-$resultado = mysqli_query($conexion, $query);
+// 2. Ejecutamos añadiendo los % al valor de la variable
+$stmt->execute(['busqueda' => "%$busqueda%"]);
 
-if (mysqli_num_rows($resultado) > 0) {
-    $producto = mysqli_fetch_assoc($resultado);
+// 3. Obtenemos el producto directamente
+$producto = $stmt->fetch(PDO::FETCH_ASSOC);
 
+if ($producto) {
     header("Location: detalle_producto.php?id=" . $producto['id_producto']);
     exit;
 } else {
@@ -26,7 +26,6 @@ if (mysqli_num_rows($resultado) > 0) {
     <script>
         alert('Este producto no existe');
         window.location='index.php#productos';
-    </script>
-    ";
+    </script>";
 }
 ?>

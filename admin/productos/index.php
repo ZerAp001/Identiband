@@ -4,30 +4,23 @@ include '../../includes/db.php';
 include '../includes/header.php';
 
 $where = [];
+$filtros = []; // Array para guardar los valores seguros
 
 // Buscar por nombre
 if (!empty($_GET['buscar'])) {
-
-    $buscar = mysqli_real_escape_string($conexion, $_GET['buscar']);
-
-    $where[] = "
-        nombre_modelo LIKE '%$buscar%'
-    ";
+    $where[] = "nombre_modelo LIKE :buscar";
+    // Agregamos los símbolos % directamente en el valor que guardamos en el array
+    $filtros['buscar'] = "%" . $_GET['buscar'] . "%";
 }
 
 // Filtrar por tipo
 if (!empty($_GET['tipo'])) {
-
-    $tipo = mysqli_real_escape_string($conexion, $_GET['tipo']);
-
-    $where[] = "tipo = '$tipo'";
+    $where[] = "tipo = :tipo";
+    $filtros['tipo'] = $_GET['tipo'];
 }
 
 // Consulta base
-$sql = "
-    SELECT *
-    FROM productos
-";
+$sql = "SELECT * FROM productos";
 
 // Agregar filtros
 if (!empty($where)) {
@@ -38,7 +31,11 @@ if (!empty($where)) {
 $sql .= " ORDER BY id_producto DESC";
 
 // Ejecutar consulta
-$query = mysqli_query($conexion, $sql);
+$stmt = $conexion->prepare($sql);
+$stmt->execute($filtros);
+
+// Obtener los datos
+$productos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">

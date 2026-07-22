@@ -2,30 +2,25 @@
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
 include 'db.php';
 
 // Actualiza el contador del carrito.
-
 $conteo_carrito = 0;
 
 if (isset($_SESSION['usuario_id'])) {
     $u_id = $_SESSION['usuario_id'];
 
-    $sql_carrito = "
-        SELECT COALESCE(SUM(cantidad), 0) AS total
-        FROM carrito
-        WHERE id_usuario = $u_id
-    ";
-
-    $res_carrito = mysqli_query($conexion, $sql_carrito);
-
-    if ($res_carrito) {
-        $data_carrito = mysqli_fetch_assoc($res_carrito);
-        $conteo_carrito = $data_carrito['total'];
-    } else {
-        $conteo_carrito = 0;
-    }
+    // Preparamos la consulta para ser segura
+    $stmt = $conexion->prepare("SELECT COALESCE(SUM(cantidad), 0) AS total FROM carrito WHERE id_usuario = :u_id");
+    
+    // Ejecutamos pasando el parámetro
+    $stmt->execute(['u_id' => $u_id]);
+    
+    // Obtenemos el resultado directamente
+    $data_carrito = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Asignamos el valor
+    $conteo_carrito = $data_carrito['total'];
 }
 ?>
 

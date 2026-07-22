@@ -6,34 +6,44 @@ $mensaje = "";
 $tipo_alerta = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $nombre = mysqli_real_escape_string($conexion, $_POST['nombre']);
-    $apellidos = mysqli_real_escape_string($conexion, $_POST['apellidos']);
-    $email = mysqli_real_escape_string($conexion, $_POST['email']);
-    $password = $_POST['password'];
-    $confirm_password = $_POST['confirm_password'];
+    $nombre = $_POST['nombre'] ?? '';
+    $apellidos = $_POST['apellidos'] ?? '';
+    $email = $_POST['email'] ?? '';
+    $password = $_POST['password'] ?? '';
+    $confirm_password = $_POST['confirm_password'] ?? '';
 
-    // Validar si el correo ya existe
-    $check_email = mysqli_query($conexion, "SELECT email FROM usuarios WHERE email = '$email'");
-    
-    if (mysqli_num_rows($check_email) > 0) {
+    // 1. Validar si el correo ya existe utilizando una consulta preparada
+    $stmt_check = $conexion->prepare("SELECT email FROM usuarios WHERE email = :email");
+    $stmt_check->execute(['email' => $email]);
+
+    if ($stmt_check->rowCount() > 0) {
         $mensaje = "Este correo ya está registrado.";
         $tipo_alerta = "danger";
     } elseif ($password !== $confirm_password) {
         $mensaje = "Las contraseñas no coinciden.";
         $tipo_alerta = "danger";
     } else {
-        // Encriptar la contraseña
+        // Encriptar la contraseña de forma segura
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
-        
-        $sql = "INSERT INTO usuarios (nombre, apellidos, email, password) VALUES ('$nombre', '$apellidos', '$email', '$password_hash')";
-        
-        if (mysqli_query($conexion, $sql)) {
+
+        // 2. Insertar el nuevo usuario con una consulta preparada
+        $stmt_insert = $conexion->prepare("
+            INSERT INTO usuarios (nombre, apellidos, email, password) 
+            VALUES (:nombre, :apellidos, :email, :password_hash)
+        ");
+
+        if ($stmt_insert->execute([
+            'nombre' => $nombre,
+            'apellidos' => $apellidos,
+            'email' => $email,
+            'password_hash' => $password_hash
+        ])) {
             $mensaje = "¡Registro exitoso! Ya puedes iniciar sesión.";
             $tipo_alerta = "success";
-            // Opcional: Redirigir al login tras 2 segundos
+            // Redirigir al login tras 2 segundos
             header("refresh:2;url=login.php");
         } else {
-            $mensaje = "Error al registrar: " . mysqli_error($conexion);
+            $mensaje = "Error al registrar el usuario.";
             $tipo_alerta = "danger";
         }
     }

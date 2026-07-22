@@ -4,53 +4,36 @@ include '../../includes/db.php';
 include '../includes/header.php';
 
 /* BUSCADOR */
-
 $busqueda = $_GET['buscar'] ?? '';
-
 $where = '';
+$filtros = [];
 
-if($busqueda != ''){
-
-    $busqueda = mysqli_real_escape_string(
-        $conexion,
-        $busqueda
-    );
-
-    $where = "
-    WHERE usuarios.nombre LIKE '%$busqueda%'
-    OR usuarios.email LIKE '%$busqueda%'
-    ";
+if ($busqueda != '') {
+    // Usamos el marcador :busqueda y preparamos el valor con los %
+    $where = " WHERE usuarios.nombre LIKE :busqueda OR usuarios.email LIKE :busqueda ";
+    $filtros['busqueda'] = "%" . $busqueda . "%";
 }
 
 /* QUERY */
+$sql = "
+    SELECT 
+        usuarios.*, 
+        COUNT(pedidos.id_pedido) AS total_pedidos, 
+        COALESCE(SUM(ventas.monto_total), 0) AS total_gastado
+    FROM usuarios
+    LEFT JOIN pedidos ON usuarios.id_usuario = pedidos.id_usuario
+    LEFT JOIN ventas ON usuarios.id_usuario = ventas.id_usuario AND ventas.estado_pago = 'completado'
+    $where
+    GROUP BY usuarios.id_usuario
+    ORDER BY usuarios.id_usuario DESC
+";
 
-$query = mysqli_query($conexion, "
+$stmt = $conexion->prepare($sql);
+$stmt->execute($filtros);
 
-SELECT
+// Guardamos los resultados
+$usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    usuarios.*,
-
-    COUNT(pedidos.id_pedido) total_pedidos,
-
-    COALESCE(SUM(ventas.monto_total),0)
-    AS total_gastado
-
-FROM usuarios
-
-LEFT JOIN pedidos
-ON usuarios.id_usuario = pedidos.id_usuario
-
-LEFT JOIN ventas
-ON usuarios.id_usuario = ventas.id_usuario
-AND ventas.estado_pago='completado'
-
-$where
-
-GROUP BY usuarios.id_usuario
-
-ORDER BY usuarios.id_usuario DESC
-
-");
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -107,13 +90,12 @@ ORDER BY usuarios.id_usuario DESC
 
             <tbody>
 
-            <?php while($usuario = mysqli_fetch_assoc($query)): ?>
-
-                <?php
-                $inicial = strtoupper(
-                    substr($usuario['nombre'],0,1)
-                );
-                ?>
+           <?php foreach ($usuarios as $usuario): ?>
+    <?php
+        $inicial = strtoupper(substr($usuario['nombre'], 0, 1));
+    ?>
+    <!-- Aquí va tu código HTML usando $usuario['nombre'], etc. -->
+<?php endforeach; ?>
 
                 <tr>
 

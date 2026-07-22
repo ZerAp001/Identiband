@@ -3,106 +3,34 @@ include 'includes/auth.php';
 include '../includes/db.php';
 
 /* KPIs */
-
-$totalUsuarios = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total FROM usuarios")
-)['total'];
-
-$totalProductos = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total FROM productos")
-)['total'];
-
-$totalPedidos = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total FROM pedidos")
-)['total'];
-
-$ingresos = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT SUM(monto_total) total
-     FROM ventas
-     WHERE estado_pago='completado'")
-)['total'] ?? 0;
+// --- KPIs SIMPLES ---
+// Usamos query() porque son consultas fijas, no necesitan prepare()
+$totalUsuarios = $conexion->query("SELECT COUNT(*) FROM usuarios")->fetchColumn();
+$totalProductos = $conexion->query("SELECT COUNT(*) FROM productos")->fetchColumn();
+$totalPedidos = $conexion->query("SELECT COUNT(*) FROM pedidos")->fetchColumn();
+$ingresos = $conexion->query("SELECT SUM(monto_total) FROM ventas WHERE estado_pago='completado'")->fetchColumn() ?? 0;
 
 /* PEDIDOS */
-
-$pendientes = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total
-     FROM pedidos
-     WHERE estado='Pendiente'")
-)['total'];
-
-$enviados = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total
-     FROM pedidos
-     WHERE estado='Enviado'")
-)['total'];
-
-$entregados = mysqli_fetch_assoc(
-    mysqli_query($conexion,
-    "SELECT COUNT(*) total
-     FROM pedidos
-     WHERE estado='Entregado'")
-)['total'];
+$pendientes = $conexion->query("SELECT COUNT(*) FROM pedidos WHERE estado='Pendiente'")->fetchColumn();
+$enviados = $conexion->query("SELECT COUNT(*) FROM pedidos WHERE estado='Enviado'")->fetchColumn();
+$entregados = $conexion->query("SELECT COUNT(*) FROM pedidos WHERE estado='Entregado'")->fetchColumn();
 
 /* GRÁFICA INGRESOS */
-
-$ventasMes = mysqli_query($conexion, "
-
-SELECT
-
-MONTH(fecha_venta) mes,
-SUM(monto_total) total
-
-FROM ventas
-
-WHERE estado_pago='completado'
-
-GROUP BY MONTH(fecha_venta)
-
-ORDER BY MONTH(fecha_venta)
-
-");
+$ventasMes = $conexion->query("SELECT MONTH(fecha_venta) as mes, SUM(monto_total) as total FROM ventas WHERE estado_pago='completado' GROUP BY MONTH(fecha_venta) ORDER BY MONTH(fecha_venta)")->fetchAll(PDO::FETCH_ASSOC);
 
 $meses = [];
 $totales = [];
-
-while($row = mysqli_fetch_assoc($ventasMes)){
-
+foreach ($ventasMes as $row) {
     $meses[] = $row['mes'];
     $totales[] = $row['total'];
 }
 
 /* PRODUCTOS TOP */
-
-$topProductos = mysqli_query($conexion, "
-
-SELECT
-productos.nombre_modelo,
-SUM(detalle_ventas.cantidad) total
-
-FROM detalle_ventas
-
-INNER JOIN productos
-ON detalle_ventas.id_producto = productos.id_producto
-
-GROUP BY productos.id_producto
-
-ORDER BY total DESC
-
-LIMIT 5
-
-");
+$topProductos = $conexion->query("SELECT productos.nombre_modelo, SUM(detalle_ventas.cantidad) as total FROM detalle_ventas INNER JOIN productos ON detalle_ventas.id_producto = productos.id_producto GROUP BY productos.id_producto ORDER BY total DESC LIMIT 5")->fetchAll(PDO::FETCH_ASSOC);
 
 $nombresProductos = [];
 $ventasProductos = [];
-
-while($row = mysqli_fetch_assoc($topProductos)){
-
+foreach ($topProductos as $row) {
     $nombresProductos[] = $row['nombre_modelo'];
     $ventasProductos[] = $row['total'];
 }

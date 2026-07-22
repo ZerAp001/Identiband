@@ -10,12 +10,19 @@ if (!$usuario_id) {
     exit; 
 }
 
-$query_favs = "SELECT f.*, p.nombre_modelo, p.precio, p.imagen_url, p.variante_info
-               FROM favoritos f
-               JOIN productos p ON f.id_producto = p.id_producto
-               WHERE f.id_usuario = $usuario_id";
+// 1. Preparamos la consulta con JOIN y el marcador de posición
+$stmt = $conexion->prepare("
+    SELECT f.*, p.nombre_modelo, p.precio, p.imagen_url, p.variante_info
+    FROM favoritos f
+    JOIN productos p ON f.id_producto = p.id_producto
+    WHERE f.id_usuario = :usuario_id
+");
 
-$res_favs = mysqli_query($conexion, $query_favs);
+// 2. Ejecutamos pasando el ID del usuario de forma segura
+$stmt->execute(['usuario_id' => $usuario_id]);
+
+// 3. Obtenemos todos los favoritos
+$favoritos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="container py-5" style="min-height: 80vh;">
@@ -31,55 +38,49 @@ $res_favs = mysqli_query($conexion, $query_favs);
     </div>
 
     <div class="row">
-        <?php if(mysqli_num_rows($res_favs) > 0): ?>
-            
-            <?php while($fav = mysqli_fetch_assoc($res_favs)): ?>
-                
-                <div class="col-md-4 col-lg-3 mb-4">
-                    <div class="card bg-dark border-secondary h-100 shadow-sm">
+     <?php if (!empty($favoritos)): ?>
+    
+    <?php foreach ($favoritos as $fav): ?>
+        <div class="col-md-4 col-lg-3 mb-4">
+            <div class="card bg-dark border-secondary h-100 shadow-sm">
 
-                        <img 
-                            src="assets/<?php echo $fav['imagen_url']; ?>" 
-                            class="card-img-top p-3" 
-                            alt="Modelo"
-                            onerror="this.src='assets/pulsera.png'"
-                        >
+                <img 
+                    src="assets/<?php echo htmlspecialchars($fav['imagen_url']); ?>" 
+                    class="card-img-top p-3" 
+                    alt="Modelo"
+                    onerror="this.src='assets/pulsera.png'"
+                >
 
-                        <div class="card-body text-center">
-                            <h5 class="card-title text-white">
-                                <?php echo $fav['nombre_modelo']; ?>
-                            </h5>
+                <div class="card-body text-center">
+                    <h5 class="card-title text-white">
+                        <?php echo htmlspecialchars($fav['nombre_modelo']); ?>
+                    </h5>
 
-                            <p class="text-white-50 small">
-                                <?php echo $fav['variante_info']; ?>
-                            </p>
+                    <p class="text-white-50 small">
+                        <?php echo htmlspecialchars($fav['variante_info']); ?>
+                    </p>
 
-                            <p class="text-info fw-bold mb-3">
-                                $<?php echo number_format($fav['precio'], 2); ?>
-                            </p>
+                    <p class="text-info fw-bold mb-3">
+                        $<?php echo number_format($fav['precio'], 2); ?>
+                    </p>
 
-                            <div class="d-grid gap-2">
+                    <div class="d-grid gap-2">
+                        <a href="detalle_producto.php?id=<?php echo $fav['id_producto']; ?>" 
+                           class="btn btn-identi btn-sm fw-bold">
+                            Añadir al carrito
+                        </a>
 
-                                <a 
-                                   href="detalle_producto.php?id=<?php echo $fav['id_producto']; ?>" 
-                                    class="btn btn-identi btn-sm fw-bold"
-                                >
-                                    Añadir al carrito
-                                </a>
-
-                                <a 
-                                    href="eliminar_favorito.php?id=<?php echo $fav['id_producto']; ?>" 
-                                    class="btn btn-outline-danger btn-sm border-0"
-                                >
-                                    <i class="bi bi-trash"></i> Eliminar
-                                </a>
-
-                            </div>
-                        </div>
+                        <a href="eliminar_favorito.php?id=<?php echo $fav['id_producto']; ?>" 
+                           class="btn btn-outline-danger btn-sm border-0">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </a>
                     </div>
                 </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
 
-            <?php endwhile; ?>
+<?php endif; ?>
 
         <?php else: ?>
 

@@ -13,12 +13,19 @@ if (!$usuario_id) {
 }
 
 // Consulta carrito
-$query = "SELECT c.*, p.nombre_modelo, p.precio, p.imagen_url
-          FROM carrito c
-          JOIN productos p ON c.id_producto = p.id_producto
-          WHERE c.id_usuario = $usuario_id";
+// 1. Preparamos la consulta con JOIN y el marcador :usuario_id
+$stmt = $conexion->prepare("
+    SELECT c.*, p.nombre_modelo, p.precio, p.imagen_url
+    FROM carrito c
+    JOIN productos p ON c.id_producto = p.id_producto
+    WHERE c.id_usuario = :usuario_id
+");
 
-$resultado = mysqli_query($conexion, $query);
+// 2. Ejecutamos pasando el ID del usuario de forma segura
+$stmt->execute(['usuario_id' => $usuario_id]);
+
+// 3. Obtenemos todos los elementos del carrito
+$items_carrito = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!-- MENSAJE DE SISTEMA -->
@@ -62,14 +69,20 @@ $resultado = mysqli_query($conexion, $query);
                     <tbody>
 
                     <?php
-                    $subtotal_general = 0;
+                  $subtotal_general = 0;
 
-                    if (mysqli_num_rows($resultado) > 0):
+// Ya no necesitamos mysqli_num_rows, basta con verificar si el array no está vacío
+if (!empty($items_carrito)): 
+    
+    // Recorremos el array con un foreach
+    foreach ($items_carrito as $item): 
+        
+        $subtotal = $item['precio'] * $item['cantidad'];
+        $subtotal_general += $subtotal;
+        
+    endforeach;
 
-                        while ($item = mysqli_fetch_assoc($resultado)):
-
-                            $subtotal = $item['precio'] * $item['cantidad'];
-                            $subtotal_general += $subtotal;
+endif;
                     ?>
 
                         <tr class="align-middle">
@@ -147,29 +160,21 @@ $resultado = mysqli_query($conexion, $query);
                 <hr class="border-secondary">
 
                 <?php
-                $config_query = mysqli_query(
-    $conexion,
-    "SELECT envio_gratis FROM configuracion LIMIT 1"
-);
-
-$config = mysqli_fetch_assoc($config_query);
-
-$minimo_envio_gratis = floatval($config['envio_gratis']);
+       // Obtenemos el valor de configuración directamente
+$minimo_envio_gratis = floatval($conexion->query("SELECT envio_gratis FROM configuracion LIMIT 1")->fetchColumn());
 
 if ($subtotal_general <= 0) {
     $envio = 0;
     $texto_envio = "$0 MXN";
-}
-elseif ($subtotal_general >= $minimo_envio_gratis) {
+} elseif ($subtotal_general >= $minimo_envio_gratis) {
     $envio = 0;
     $texto_envio = "Gratis";
-}
-else {
+} else {
     $envio = 79;
     $texto_envio = "$79 MXN";
 }
 
-                $total_final = $subtotal_general + $envio;
+$total_final = $subtotal_general + $envio;
                 ?>
 
                 <div class="d-flex justify-content-between mb-2">

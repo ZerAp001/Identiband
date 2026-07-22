@@ -9,29 +9,29 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-$query = mysqli_query($conexion, "
-
-SELECT
-    pedidos.*,
-    usuarios.nombre,
-    usuarios.apellidos,
-    usuarios.email
-
-FROM pedidos
-
-INNER JOIN usuarios
-ON pedidos.id_usuario = usuarios.id_usuario
-
-WHERE pedidos.id_pedido = $id
-
+// 1. Preparamos la consulta con JOIN
+$stmt = $conexion->prepare("
+    SELECT 
+        pedidos.*, 
+        usuarios.nombre, 
+        usuarios.apellidos, 
+        usuarios.email 
+    FROM pedidos 
+    INNER JOIN usuarios ON pedidos.id_usuario = usuarios.id_usuario 
+    WHERE pedidos.id_pedido = :id
 ");
 
-if(mysqli_num_rows($query) == 0){
+// 2. Ejecutamos pasando el ID
+$stmt->execute(['id' => $id]);
+
+// 3. Obtenemos el resultado
+$pedido = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// 4. Si $pedido es falso, significa que no encontró nada
+if (!$pedido) {
     header("Location: index.php");
     exit;
 }
-
-$pedido = mysqli_fetch_assoc($query);
 
 include '../includes/header.php';
 ?>

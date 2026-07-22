@@ -13,50 +13,36 @@ if (!$usuario_id) {
 include __DIR__ . '/includes/db.php';
 
 // Validación del carrito con la BD.
+// 1. Verificar si el carrito está vacío
+$stmt = $conexion->prepare("SELECT COUNT(*) FROM carrito WHERE id_usuario = :u_id");
+$stmt->execute(['u_id' => $usuario_id]);
+$total_carrito = $stmt->fetchColumn();
 
-$check_carrito = mysqli_query($conexion, "
-    SELECT COUNT(*) as total
-    FROM carrito
-    WHERE id_usuario = $usuario_id
-");
-
-$data = mysqli_fetch_assoc($check_carrito);
-
-if ($data['total'] == 0) {
+if ($total_carrito == 0) {
     $_SESSION['mensaje'] = "Tu carrito está vacío. Selecciona productos para comprar.";
     header("Location: carrito.php");
     exit();
 }
 
-// Consulta los productos en el carrito
-
-$query_carrito = "
-    SELECT c.*, p.nombre_modelo, p.precio
-    FROM carrito c
-    JOIN productos p ON c.id_producto = p.id_producto
-    WHERE c.id_usuario = $usuario_id
-";
-
-$res_carrito = mysqli_query($conexion, $query_carrito);
+// 2. Consultar productos del carrito
+$stmt = $conexion->prepare("
+    SELECT c.*, p.nombre_modelo, p.precio 
+    FROM carrito c 
+    JOIN productos p ON c.id_producto = p.id_producto 
+    WHERE c.id_usuario = :u_id
+");
+$stmt->execute(['u_id' => $usuario_id]);
+$productos_carrito = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 $subtotal_general = 0;
-$productos_carrito = [];
-
-while ($item = mysqli_fetch_assoc($res_carrito)) {
+foreach ($productos_carrito as &$item) { // Usamos & para modificar el array original
     $item['subtotal'] = $item['precio'] * $item['cantidad'];
     $subtotal_general += $item['subtotal'];
-    $productos_carrito[] = $item;
 }
+unset($item); // Limpiamos la referencia
 
-// Costo por envío.
-$config_query = mysqli_query(
-    $conexion,
-    "SELECT envio_gratis FROM configuracion LIMIT 1"
-);
-
-$config = mysqli_fetch_assoc($config_query);
-
-$minimo_envio_gratis = floatval($config['envio_gratis']);
+// 3. Costo por envío
+$minimo_envio_gratis = floatval($conexion->query("SELECT envio_gratis FROM configuracion LIMIT 1")->fetchColumn());
 
 if ($subtotal_general >= $minimo_envio_gratis) {
     $envio = 0;

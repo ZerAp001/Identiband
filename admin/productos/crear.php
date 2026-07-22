@@ -3,36 +3,24 @@ include '../includes/auth.php';
 include '../../includes/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // 1. Recibimos los datos
+    $datos = [
+        'nombre'      => $_POST['nombre'],
+        'descripcion' => $_POST['descripcion'],
+        'precio'      => $_POST['precio'],
+        'stock'       => $_POST['stock'],
+        'tipo'        => $_POST['tipo'],
+        'imagen'      => $_POST['imagen']
+    ];
 
-    $nombre = $_POST['nombre'];
-    $descripcion = $_POST['descripcion'];
-    $precio = $_POST['precio'];
-    $stock = $_POST['stock'];
-    $tipo = $_POST['tipo'];
-
-    $imagen = $_POST['imagen'];
-
-    mysqli_query(
-        $conexion,
-        "INSERT INTO productos
-        (
-            nombre_modelo,
-            descripcion,
-            precio,
-            stock,
-            tipo,
-            imagen_url
-        )
-        VALUES
-        (
-            '$nombre',
-            '$descripcion',
-            '$precio',
-            '$stock',
-            '$tipo',
-            '$imagen'
-        )"
-    );
+    // 2. Preparamos la consulta con marcadores de posición
+    $sql = "INSERT INTO productos (nombre_modelo, descripcion, precio, stock, tipo, imagen_url) 
+            VALUES (:nombre, :descripcion, :precio, :stock, :tipo, :imagen)";
+    
+    $stmt = $conexion->prepare($sql);
+    
+    // 3. Ejecutamos pasando el array directamente
+    $stmt->execute($datos);
 
     header("Location: index.php");
     exit;

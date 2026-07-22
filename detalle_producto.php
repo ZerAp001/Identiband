@@ -10,19 +10,19 @@ if (!isset($_GET['id'])) {
 //Selección de materiales y cantidad de los productos.
 $id_producto = intval($_GET['id']);
 
-$query = "SELECT * FROM productos WHERE id_producto = $id_producto";
-$resultado = mysqli_query($conexion, $query);
+// 1. Obtener producto de forma segura
+$stmt = $conexion->prepare("SELECT * FROM productos WHERE id_producto = :id");
+$stmt->execute(['id' => $id_producto]);
+$producto = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$resultado || mysqli_num_rows($resultado) == 0) {
+// Si no existe el producto, redirigimos
+if (!$producto) {
     header("Location: index.php#productos");
     exit;
 }
 
-$producto = mysqli_fetch_assoc($resultado);
-
 $es_personalizable = (
-    stripos($producto['nombre_modelo'], 'Personalizable') !== false
-    ||
+    stripos($producto['nombre_modelo'], 'Personalizable') !== false ||
     stripos($producto['nombre_modelo'], '1 color') !== false
 );
 
@@ -32,18 +32,15 @@ $es_premium = (
 
 $es_favorito = false;
 
+// 2. Verificar favoritos si el usuario ha iniciado sesión
 if (isset($_SESSION['usuario_id'])) {
     $uid = $_SESSION['usuario_id'];
 
-    $checkFav = mysqli_query(
-        $conexion,
-        "SELECT id_favorito
-         FROM favoritos
-         WHERE id_usuario = $uid
-         AND id_producto = $id_producto"
-    );
-
-    $es_favorito = mysqli_num_rows($checkFav) > 0;
+    $stmt_fav = $conexion->prepare("SELECT id_favorito FROM favoritos WHERE id_usuario = :uid AND id_producto = :pid");
+    $stmt_fav->execute(['uid' => $uid, 'pid' => $id_producto]);
+    
+    // Si fetch() devuelve datos, significa que es favorito
+    $es_favorito = (bool) $stmt_fav->fetch(PDO::FETCH_ASSOC);
 }
 ?>
 

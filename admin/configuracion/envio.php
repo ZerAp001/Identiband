@@ -2,22 +2,19 @@
 include '../includes/auth.php';
 include '../../includes/db.php';
 
-$config = mysqli_fetch_assoc(
-    mysqli_query(
-        $conexion,
-        "SELECT * FROM configuracion LIMIT 1"
-    )
-);
+// Usamos ->query() porque es una consulta fija sin variables externas
+$res = $conexion->query("SELECT * FROM configuracion LIMIT 1");
+$config = $res->fetch(PDO::FETCH_ASSOC);
 
+// --- PARTE DE ESCRITURA (UPDATE) ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-
     $nuevo = floatval($_POST['envio']);
 
-    mysqli_query(
-        $conexion,
-        "UPDATE configuracion
-         SET envio_gratis = '$nuevo'"
-    );
+    // Usamos ->prepare() para la seguridad
+    $stmt = $conexion->prepare("UPDATE configuracion SET envio_gratis = :nuevo");
+    
+    // Ejecutamos pasando el valor
+    $stmt->execute(['nuevo' => $nuevo]);
 
     header("Location: envio.php");
     exit;

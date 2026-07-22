@@ -19,24 +19,40 @@ $color = $_GET['color'] ?? '';
 $material = $_GET['material'] ?? '';
 $variante = $_GET['variante'] ?? '';
 
-$verificar = mysqli_query(
-    $conexion,
-    "SELECT * FROM favoritos
-     WHERE id_usuario = $id_usuario
-     AND id_producto = $id_producto
-     AND color_elegido = '$color'
-     AND material_elegido = '$material'
-     AND variante_paquete = '$variante'"
-);
+// 1. Verificar si ya existe en favoritos con las mismas opciones
+$stmt_verificar = $conexion->prepare("
+    SELECT * FROM favoritos
+    WHERE id_usuario = :id_usuario
+    AND id_producto = :id_producto
+    AND color_elegido = :color
+    AND material_elegido = :material
+    AND variante_paquete = :variante
+");
 
-if (mysqli_num_rows($verificar) == 0) {
-    mysqli_query(
-        $conexion,
-        "INSERT INTO favoritos
+$stmt_verificar->execute([
+    'id_usuario' => $id_usuario,
+    'id_producto' => $id_producto,
+    'color' => $color,
+    'material' => $material,
+    'variante' => $variante
+]);
+
+// 2. Si no existe, lo insertamos
+if ($stmt_verificar->rowCount() == 0) {
+    $stmt_insert = $conexion->prepare("
+        INSERT INTO favoritos
         (id_usuario, id_producto, color_elegido, material_elegido, variante_paquete)
         VALUES
-        ($id_usuario, $id_producto, '$color', '$material', '$variante')"
-    );
+        (:id_usuario, :id_producto, :color, :material, :variante)
+    ");
+    
+    $stmt_insert->execute([
+        'id_usuario' => $id_usuario,
+        'id_producto' => $id_producto,
+        'color' => $color,
+        'material' => $material,
+        'variante' => $variante
+    ]);
 }
 
 header("Location: favoritos.php");

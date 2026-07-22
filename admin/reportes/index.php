@@ -4,47 +4,35 @@ include '../../includes/db.php';
 include '../includes/header.php';
 
 /* FILTROS */
-
 $inicio = $_GET['inicio'] ?? date('Y-m-01');
 $fin = $_GET['fin'] ?? date('Y-m-d');
 
 /* CONSULTA */
+$sql = "
+    SELECT 
+        pedidos.id_pedido,
+        usuarios.nombre,
+        usuarios.apellidos,
+        pedidos.total,
+        pedidos.estado,
+        pedidos.fecha_pedido
+    FROM pedidos
+    INNER JOIN usuarios ON pedidos.id_usuario = usuarios.id_usuario
+    WHERE DATE(pedidos.fecha_pedido) BETWEEN :inicio AND :fin
+    ORDER BY pedidos.fecha_pedido DESC
+";
 
-$query = mysqli_query($conexion, "
-
-SELECT
-    pedidos.id_pedido,
-    usuarios.nombre,
-    usuarios.apellidos,
-    pedidos.total,
-    pedidos.estado,
-    pedidos.fecha_pedido
-
-FROM pedidos
-
-INNER JOIN usuarios
-ON pedidos.id_usuario = usuarios.id_usuario
-
-WHERE DATE(pedidos.fecha_pedido)
-BETWEEN '$inicio' AND '$fin'
-
-ORDER BY pedidos.fecha_pedido DESC
-
-");
+$stmt = $conexion->prepare($sql);
+$stmt->execute(['inicio' => $inicio, 'fin' => $fin]);
 
 /* KPIs */
-
 $totalVentas = 0;
 $totalPedidos = 0;
+$pedidos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-$pedidos = [];
-
-while($row = mysqli_fetch_assoc($query)){
-
-    $pedidos[] = $row;
-
+// Recorremos el array para calcular los totales
+foreach ($pedidos as $row) {
     $totalVentas += $row['total'];
-
     $totalPedidos++;
 }
 ?>

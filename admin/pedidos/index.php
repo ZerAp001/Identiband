@@ -4,29 +4,24 @@ include '../../includes/db.php';
 include '../includes/header.php';
 
 $where = [];
+$filtros = []; // Este array guardará los valores para la consulta segura
 
 // Filtrar por estado
 if (!empty($_GET['estado'])) {
-
-    $estado = mysqli_real_escape_string($conexion, $_GET['estado']);
-
-    $where[] = "pedidos.estado = '$estado'";
+    $where[] = "pedidos.estado = :estado";
+    $filtros['estado'] = $_GET['estado']; // PDO escapa esto automáticamente
 }
 
 // Filtrar fecha inicio
 if (!empty($_GET['fecha_inicio'])) {
-
-    $fecha_inicio = $_GET['fecha_inicio'];
-
-    $where[] = "DATE(pedidos.fecha_pedido) >= '$fecha_inicio'";
+    $where[] = "DATE(pedidos.fecha_pedido) >= :fecha_inicio";
+    $filtros['fecha_inicio'] = $_GET['fecha_inicio'];
 }
 
 // Filtrar fecha fin
 if (!empty($_GET['fecha_fin'])) {
-
-    $fecha_fin = $_GET['fecha_fin'];
-
-    $where[] = "DATE(pedidos.fecha_pedido) <= '$fecha_fin'";
+    $where[] = "DATE(pedidos.fecha_pedido) <= :fecha_fin";
+    $filtros['fecha_fin'] = $_GET['fecha_fin'];
 }
 
 // Consulta base
@@ -45,14 +40,12 @@ if (!empty($where)) {
 // Ordenar
 $sql .= " ORDER BY pedidos.fecha_pedido DESC";
 
-// Ejecutar consulta
-$query = mysqli_query($conexion, $sql);
+// Ejecutar consulta usando el array de filtros
+$stmt = $conexion->prepare($sql);
+$stmt->execute($filtros);
 
 // Guardado de datos en array
-$pedidos_data = [];
-while($row = mysqli_fetch_assoc($query)) {
-    $pedidos_data[] = $row;
-}
+$pedidos_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">

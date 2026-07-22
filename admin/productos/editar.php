@@ -9,49 +9,40 @@ if (!isset($_GET['id'])) {
 
 $id = intval($_GET['id']);
 
-$query = mysqli_query(
-    $conexion,
-    "SELECT * FROM productos
-     WHERE id_producto = $id"
-);
+// 1. Obtener producto (Lectura)
+$stmt = $conexion->prepare("SELECT * FROM productos WHERE id_producto = :id");
+$stmt->execute(['id' => $id]);
+$producto = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if (!$query || mysqli_num_rows($query) == 0) {
+// Si no existe, redirigir
+if (!$producto) {
     header("Location: index.php");
     exit;
 }
 
-$producto = mysqli_fetch_assoc($query);
-
+// 2. Actualizar producto (Escritura)
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
-    $nombre = mysqli_real_escape_string(
-        $conexion,
-        $_POST['nombre']
-    );
-
-    $descripcion = mysqli_real_escape_string(
-        $conexion,
-        $_POST['descripcion']
-    );
-
-    $precio = $_POST['precio'];
-    $stock = $_POST['stock'];
-    $tipo = $_POST['tipo'];
-
-  $imagen = $_POST['imagen'];
-
-    mysqli_query(
-        $conexion,
-        "UPDATE productos
-        SET
-            nombre_modelo = '$nombre',
-            descripcion = '$descripcion',
-            precio = '$precio',
-            stock = '$stock',
-            tipo = '$tipo',
-            imagen_url = '$imagen'
-        WHERE id_producto = $id"
-    );
+    $sql = "UPDATE productos
+            SET nombre_modelo = :nombre,
+                descripcion   = :descripcion,
+                precio        = :precio,
+                stock         = :stock,
+                tipo          = :tipo,
+                imagen_url    = :imagen
+            WHERE id_producto = :id";
+            
+    $stmt = $conexion->prepare($sql);
+    
+    $stmt->execute([
+        'nombre'      => $_POST['nombre'],
+        'descripcion' => $_POST['descripcion'],
+        'precio'      => $_POST['precio'],
+        'stock'       => $_POST['stock'],
+        'tipo'        => $_POST['tipo'],
+        'imagen'      => $_POST['imagen'],
+        'id'          => $id // ¡No olvides pasar el ID!
+    ]);
 
     header("Location: index.php");
     exit;

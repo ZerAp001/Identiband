@@ -18,53 +18,37 @@ if (!isset($_GET['id'])) {
 $id_pedido = intval($_GET['id']);
 
 // Obtiene información del pedido
+// 1. Obtener pedido (seguro para el usuario)
+$stmt = $conexion->prepare("SELECT * FROM pedidos WHERE id_pedido = :id_pedido AND id_usuario = :id_usuario");
+$stmt->execute(['id_pedido' => $id_pedido, 'id_usuario' => $usuario_id]);
+$pedido = $stmt->fetch(PDO::FETCH_ASSOC);
 
-$query_pedido = mysqli_query(
-    $conexion,
-    "SELECT *
-     FROM pedidos
-     WHERE id_pedido = $id_pedido
-     AND id_usuario = $usuario_id"
-);
-
-if (!$query_pedido || mysqli_num_rows($query_pedido) == 0) {
+if (!$pedido) {
     header("Location: pedidos.php");
     exit;
 }
 
-$pedido = mysqli_fetch_assoc($query_pedido);
+// 2. Obtener venta relacionada
+$stmt_venta = $conexion->prepare("
+    SELECT v.* 
+    FROM ventas v 
+    JOIN pedidos p ON v.id_venta = p.id_venta 
+    WHERE p.id_pedido = :id_pedido AND p.id_usuario = :id_usuario
+");
+$stmt_venta->execute(['id_pedido' => $id_pedido, 'id_usuario' => $usuario_id]);
+$venta = $stmt_venta->fetch(PDO::FETCH_ASSOC);
 
-// 🔧 FIX: obtener la venta CORRECTA de ese pedido (no la última)
-$query_venta = mysqli_query(
-    $conexion,
-    "SELECT v.*
-     FROM ventas v
-     JOIN pedidos p ON v.id_venta = p.id_venta
-     WHERE p.id_pedido = $id_pedido
-     AND p.id_usuario = $usuario_id"
-);
-
-$venta = null;
-
-if ($query_venta && mysqli_num_rows($query_venta) > 0) {
-    $venta = mysqli_fetch_assoc($query_venta);
-}
-
-// OBTENER PRODUCTOS DE ESA VENTA
-
-$detalle_productos = null;
-
+// 3. Obtener productos de esa venta
+$detalle_productos = [];
 if ($venta) {
-    $id_venta = $venta['id_venta'];
-
-    $detalle_productos = mysqli_query(
-        $conexion,
-        "SELECT dv.*, p.nombre_modelo
-         FROM detalle_ventas dv
-         JOIN productos p
-            ON dv.id_producto = p.id_producto
-         WHERE dv.id_venta = $id_venta"
-    );
+    $stmt_detalle = $conexion->prepare("
+        SELECT dv.*, p.nombre_modelo 
+        FROM detalle_ventas dv 
+        JOIN productos p ON dv.id_producto = p.id_producto 
+        WHERE dv.id_venta = :id_venta
+    ");
+    $stmt_detalle->execute(['id_venta' => $venta['id_venta']]);
+    $detalle_productos = $stmt_detalle->fetchAll(PDO::FETCH_ASSOC);
 }
 ?>
 
@@ -138,29 +122,27 @@ if ($venta) {
                         Productos comprados
                     </h4>
 
-                    <?php if ($detalle_productos && mysqli_num_rows($detalle_productos) > 0): ?>
+                    <?php if (!empty($detalle_productos)): ?>
+    
+    <?php foreach ($detalle_productos as $prod): ?>
+        <div class="mb-3 border-bottom border-secondary pb-3">
+            <strong>
+                <?php echo htmlspecialchars($prod['nombre_modelo']); ?>
+            </strong>
 
-                        <?php while ($prod = mysqli_fetch_assoc($detalle_productos)): ?>
+            <div class="small text-white-50">
+                Cantidad:
+                <?php echo $prod['cantidad']; ?>
+            </div>
 
-                            <div class="mb-3 border-bottom border-secondary pb-3">
+            <div class="text-info">
+                Precio unitario:
+                $<?php echo number_format($prod['precio_unitario_momento'], 2); ?>
+            </div>
+        </div>
+    <?php endforeach; ?>
 
-                                <strong>
-                                    <?php echo $prod['nombre_modelo']; ?>
-                                </strong>
-
-                                <div class="small text-white-50">
-                                    Cantidad:
-                                    <?php echo $prod['cantidad']; ?>
-                                </div>
-
-                                <div class="text-info">
-                                    Precio unitario:
-                                    $<?php echo number_format($prod['precio_unitario_momento'], 2); ?>
-                                </div>
-
-                            </div>
-
-                        <?php endwhile; ?>
+<?php endif; ?>
 
                     <?php else: ?>
 

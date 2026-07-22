@@ -19,48 +19,55 @@ $cantidad = isset($_GET['cantidad']) ? intval($_GET['cantidad']) : 1;
 if ($cantidad < 1) {
     $cantidad = 1;
 }
-
-$color = isset($_GET['color']) ? mysqli_real_escape_string($conexion, $_GET['color']) : NULL;
-$material = isset($_GET['material']) ? mysqli_real_escape_string($conexion, $_GET['material']) : NULL;
+$color = isset($_GET['color']) ? $_GET['color'] : null;
+$material = isset($_GET['material']) ? $_GET['material'] : null;
 
 /*
 Tomamos variante_info desde productos
 para guardar si es Pack x6, x12, x18, etc.
 */
-$query_producto = mysqli_query(
-    $conexion,
-    "SELECT variante_info FROM productos WHERE id_producto = $id_producto"
-);
+$stmt_prod = $conexion->prepare("SELECT variante_info FROM productos WHERE id_producto = :id_producto");
+$stmt_prod->execute(['id_producto' => $id_producto]);
+$producto_info = $stmt_prod->fetch(PDO::FETCH_ASSOC);
 
-$variante_paquete = NULL;
-
-if ($query_producto && mysqli_num_rows($query_producto) > 0) {
-    $producto = mysqli_fetch_assoc($query_producto);
-    $variante_paquete = mysqli_real_escape_string($conexion, $producto['variante_info']);
+$variante_paquete = null;
+if ($producto_info) {
+    $variante_paquete = $producto_info['variante_info'];
 }
 
 // Verificar si ya existe exactamente el mismo producto con mismas personalizaciones
-$check = mysqli_query(
-    $conexion,
-    "SELECT * FROM carrito
-     WHERE id_usuario = $id_usuario
-     AND id_producto = $id_producto
-     AND IFNULL(color_elegido,'') = IFNULL('$color','')
-     AND IFNULL(material_elegido,'') = IFNULL('$material','')"
-);
+$stmt_check = $conexion->prepare("
+    SELECT * FROM carrito
+    WHERE id_usuario = :id_usuario
+    AND id_producto = :id_producto
+    AND IFNULL(color_elegido, '') = IFNULL(:color, '')
+    AND IFNULL(material_elegido, '') = IFNULL(:material, '')
+");
 
-if (mysqli_num_rows($check) > 0) {
-    mysqli_query(
-        $conexion,
-        "UPDATE carrito
-         SET cantidad = cantidad + $cantidad
-         WHERE id_usuario = $id_usuario
-         AND id_producto = $id_producto"
-    );
+$stmt_check->execute([
+    'id_usuario' => $id_usuario,
+    'id_producto' => $id_producto,
+    'color' => $color ?? '',
+    'material' => $material ?? ''
+]);
+
+if ($stmt_check->rowCount() > 0) {
+    // Si ya existe, actualizamos la cantidad sumando la nueva
+    $stmt_update = $conexion->prepare("
+        UPDATE carrito
+        SET cantidad = cantidad + :cantidad
+        WHERE id_usuario = :id_usuario
+        AND id_producto = :id_producto
+    ");
+    $stmt_update->execute([
+        'cantidad' => $cantidad,
+        'id_usuario' => $id_usuario,
+        'id_producto' => $id_producto
+    ]);
 } else {
-    mysqli_query(
-        $conexion,
-        "INSERT INTO carrito
+    // Si no existe, insertamos el nuevo registro
+    $stmt_insert = $conexion->prepare("
+        INSERT INTO carrito
         (
             id_usuario,
             id_producto,
@@ -71,16 +78,24 @@ if (mysqli_num_rows($check) > 0) {
         )
         VALUES
         (
-            $id_usuario,
-            $id_producto,
-            $cantidad,
-            " . ($color ? "'$color'" : "NULL") . ",
-            " . ($material ? "'$material'" : "NULL") . ",
-            " . ($variante_paquete ? "'$variante_paquete'" : "NULL") . "
-        )"
-    );
+            :id_usuario,
+            :id_producto,
+            :cantidad,
+            :color,
+            :material,
+            :variante_paquete
+        )
+    ");
+    
+    $stmt_insert->execute([
+        'id_usuario' => $id_usuario,
+        'id_producto' => $id_producto,
+        'cantidad' => $cantidad,
+        'color' => $color,
+        'material' => $material,
+        'variante_paquete' => $variante_paquete
+    ]);
 }
-
 header("Location: carrito.php");
 exit;
 ?>

@@ -107,65 +107,59 @@
  </div>
 
             <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+            <?php
+include 'includes/db.php';
+
+// Obtenemos todos los productos directamente con PDO
+$productos = $conexion->query("SELECT * FROM productos")->fetchAll(PDO::FETCH_ASSOC);
+
+if (!empty($productos)):
+    foreach ($productos as $row):
+?>
+<div class="col mb-5 product-item <?php echo htmlspecialchars($row['tipo']); ?>" style="display: block;">
+    <div class="card h-100 border-secondary bg-dark text-white product-card">
+        <div class="badge badge-tipo bg-info text-dark position-absolute" style="top: 0.5rem; right: 0.5rem">
+            <?php echo htmlspecialchars($row['tipo']); ?>
+        </div>
+        
+        <img class="card-img-top" src="assets/<?php echo htmlspecialchars($row['imagen_url']); ?>" 
+             onerror="this.src='assets/pulsera.png'" alt="Producto Identiband" />
+
+        <div class="card-body p-4 text-center">
+            <h5 class="fw-bolder"><?php echo htmlspecialchars($row['nombre_modelo']); ?></h5>
+            <span class="text-info fs-5">$<?php echo number_format($row['precio'], 2); ?></span>
+            <p class="small text-white-50 mt-2"><?php echo htmlspecialchars($row['variante_info'] ?? $row['descripcion']); ?></p>
+        </div>
+        
+        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
+            <div class="text-center d-grid gap-2">
                 <?php
-                include 'includes/db.php';
-                $query = "SELECT * FROM productos";
-                $resultado = mysqli_query($conexion, $query);
-
-                if ($resultado) {
-                    while ($row = mysqli_fetch_assoc($resultado)) {
+                $requiere_personalizacion = (
+                    stripos($row['nombre_modelo'], 'Personalizable') !== false ||
+                    stripos($row['nombre_modelo'], 'Premium') !== false ||
+                    stripos($row['nombre_modelo'], '1 color') !== false
+                );
                 ?>
-                <div class="col mb-5 product-item <?php echo $row['tipo']; ?>" style="display: block;">
-                    <div class="card h-100 border-secondary bg-dark text-white product-card">
-                        <div class="badge badge-tipo bg-info text-dark position-absolute" style="top: 0.5rem; right: 0.5rem">
-                            <?php echo $row['tipo']; ?>
-                        </div>
-                        
-                        <img class="card-img-top" src="assets/<?php echo $row['imagen_url']; ?>" 
-                             onerror="this.src='assets/pulsera.png'" alt="Producto Identiband" />
-
-                        <div class="card-body p-4 text-center">
-                            <h5 class="fw-bolder"><?php echo $row['nombre_modelo']; ?></h5>
-                            <span class="text-info fs-5">$<?php echo number_format($row['precio'], 2); ?></span>
-                            <p class="small text-white-50 mt-2"><?php echo $row['variante_info'] ?? $row['descripcion']; ?></p>
-                        </div>
-                        
-                        <div class="card-footer p-4 pt-0 border-top-0 bg-transparent">
-                            <div class="text-center d-grid gap-2">
-                                <?php
-                                $requiere_personalizacion =
-                                (
-                                    stripos($row['nombre_modelo'], 'Personalizable') !== false
-                                    ||
-                                    stripos($row['nombre_modelo'], 'Premium') !== false
-                                    ||
-                                    stripos($row['nombre_modelo'], '1 color') !== false
-                                    );
-                                ?>
-                                
-                        <?php if ($requiere_personalizacion): ?>
-                            <a
-                             class="btn btn-identi mt-auto fw-bold"
-                             href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>"
-                             >  Personalizar y comprar
-                            </a>
-                            
-                    <?php else: ?>
-                        <a
-                        class="btn btn-identi mt-auto fw-bold"
-                        href="procesar_carrito.php?id=<?php echo $row['id_producto']; ?>"
-                        > Agregar al carrito
-                           </a>
-                           <?php endif; ?>
-                                <a class="btn btn-outline-light btn-sm" href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>">Ver detalles</a>
-                            </div>
-                        </div>
-                    </div>
-                  </div>
-                 <?php 
-                    }
-                } 
-                ?>
+                
+                <?php if ($requiere_personalizacion): ?>
+                    <a class="btn btn-identi mt-auto fw-bold" href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>"> 
+                        Personalizar y comprar
+                    </a>
+                <?php else: ?>
+                    <a class="btn btn-identi mt-auto fw-bold" href="procesar_carrito.php?id=<?php echo $row['id_producto']; ?>"> 
+                        Agregar al carrito
+                    </a>
+                <?php endif; ?>
+                
+                <a class="btn btn-outline-light btn-sm" href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>">Ver detalles</a>
+            </div>
+        </div>
+    </div>
+</div>
+<?php 
+    endforeach;
+endif; 
+?>
             </div>
         </div>
     </section>

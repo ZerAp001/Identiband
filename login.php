@@ -13,15 +13,20 @@ $error = "";
 // En caso de ingreso de datos incorrectos.
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $email = mysqli_real_escape_string($conexion, $_POST['email']);
+    $email = $_POST['email'];
     $password = $_POST['password'];
 
-    $query = "SELECT * FROM usuarios WHERE email = '$email'";
-    $resultado = mysqli_query($conexion, $query);
+    // 1. Preparamos la consulta con un marcador de posición para el email
+    $stmt = $conexion->prepare("SELECT * FROM usuarios WHERE email = :email");
+    
+    // 2. Ejecutamos pasando el email de forma segura
+    $stmt->execute(['email' => $email]);
+    
+    // 3. Obtenemos el registro del usuario
+    $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (mysqli_num_rows($resultado) > 0) {
-
-        $usuario = mysqli_fetch_assoc($resultado);
+    // Si el usuario existe (fetch devuelve un array si hay coincidencia)
+    if ($usuario) {
 
         // Verificamos contraseña
         if (password_verify($password, $usuario['password'])) {
