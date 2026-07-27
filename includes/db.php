@@ -1,9 +1,9 @@
 <?php
-$host = 'localhost';
-$user = 'root';
-$pass = '';
-$db = 'identiband';
-$port = '3306';
+$host = getenv('DB_HOST') ?: 'localhost';
+$user = getenv('DB_USER') ?: 'root';
+$pass = getenv('DB_PASS') !== false ? getenv('DB_PASS') : '1234';
+$db   = getenv('DB_NAME') ?: 'identiband';
+$port = getenv('DB_PORT') ?: '3306';
 
 try {
     $dsn = "mysql:host=$host;port=$port;dbname=$db;charset=utf8mb4";
