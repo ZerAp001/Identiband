@@ -10,6 +10,7 @@ try {
     $conexion = new PDO($dsn, $user, $pass);
     $conexion->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Error de conexión: " . $e->getMessage());
+    echo "Código de error: " . $e->getCode() . "<br>";
+    die("Mensaje real: " . $e->getMessage());
 }
 ?>
