@@ -175,7 +175,11 @@ if (isset($_SESSION['usuario_id'])) {
                             aria-expanded="false"
                         >
                             <i class="bi bi-person-circle me-1"></i>
-                            Hola, <?php echo explode(' ', $_SESSION['nombre'])[0]; ?>
+                            Hola, <?php 
+                                      $nombreUsuario = $_SESSION['nombre'] ?? $_SESSION['usuario_nombre'] ?? 'Usuario';
+                                      $primerNombre = explode(' ', trim($nombreUsuario))[0];
+                                      echo htmlspecialchars($primerNombre);
+                                      ?>
                         </a>
 
                         <ul class="dropdown-menu dropdown-menu-end bg-dark border-secondary shadow-lg">

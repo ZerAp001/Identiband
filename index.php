@@ -95,25 +95,70 @@
         </div>
     </section>
 
+    <!-- SECCIÓN DE PRODUCTOS -->
     <section class="py-5" id="productos" style="background-color: var(--identi-dark);">
         <div class="container px-4 px-lg-5 mt-5">
             <h2 class="text-white fw-bolder mb-4 text-center">Nuestros Modelos</h2>
 
-            <div class="d-flex justify-content-center gap-2 mb-5 flex-wrap">
-    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Todos')">Todos</button>
-    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Individual')">Individuales</button>
-    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Paquete')">Paquetes</button>
-    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Premium')">Premium</button>
- </div>
+            <!-- FILTROS Y ORDENAMIENTO -->
+            <div class="row align-items-center mb-5 g-3">
+                <div class="col-md-8 d-flex justify-content-center justify-content-md-start gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Todos')">Todos</button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Individual')">Individuales</button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Paquete')">Paquetes</button>
+                    <button type="button" class="btn btn-outline-info" onclick="filterSelection('Premium')">Premium</button>
+                </div>
+
+                <?php
+                $orden = $_GET['orden'] ?? 'default';
+                ?>
+                <div class="col-md-4 d-flex justify-content-center justify-content-md-end">
+                    <div class="input-group" style="max-width: 260px;">
+                        <label class="input-group-text bg-dark border-secondary text-info" for="selectOrden">
+                            <i class="bi bi-sort-down"></i>
+                        </label>
+                        <select class="form-select bg-dark text-white border-secondary" id="selectOrden" onchange="cargarProductosOrdenados(this.value)">
+    <option value="default" <?php echo $orden === 'default' ? 'selected' : ''; ?>>Más recientes</option>
+    <option value="mas_valorados" <?php echo $orden === 'mas_valorados' ? 'selected' : ''; ?>>Más valorados ⭐</option>
+    <option value="precio_asc" <?php echo $orden === 'precio_asc' ? 'selected' : ''; ?>>Precio: Menor a Mayor</option>
+    <option value="precio_desc" <?php echo $orden === 'precio_desc' ? 'selected' : ''; ?>>Precio: Mayor a Menor</option>
+</select>
+                    </div>
+                </div>
+            </div>
 
             <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
                 <?php
                 include 'includes/db.php';
-                $query = "SELECT * FROM productos";
+
+                // Lógica de ordenamiento SQL
+                $order_sql = "ORDER BY p.id_producto DESC";
+                switch ($orden) {
+                    case 'mas_valorados':
+                        $order_sql = "ORDER BY promedio_calificacion DESC, total_resenas DESC, p.id_producto DESC";
+                        break;
+                    case 'precio_asc':
+                        $order_sql = "ORDER BY p.precio ASC";
+                        break;
+                    case 'precio_desc':
+                        $order_sql = "ORDER BY p.precio DESC";
+                        break;
+                }
+
+                $query = "SELECT p.*, 
+                                 COALESCE(AVG(r.calificacion), 0) AS promedio_calificacion, 
+                                 COUNT(r.id_resena) AS total_resenas 
+                          FROM productos p 
+                          LEFT JOIN resenas r ON p.id_producto = r.id_producto 
+                          GROUP BY p.id_producto 
+                          $order_sql";
+
                 $resultado = mysqli_query($conexion, $query);
 
                 if ($resultado) {
                     while ($row = mysqli_fetch_assoc($resultado)) {
+                        $promedio = round($row['promedio_calificacion'], 1);
+                        $total_resenas = $row['total_resenas'];
                 ?>
                 <div class="col mb-5 product-item <?php echo $row['tipo']; ?>" style="display: block;">
                     <div class="card h-100 border-secondary bg-dark text-white product-card">
@@ -126,6 +171,21 @@
 
                         <div class="card-body p-4 text-center">
                             <h5 class="fw-bolder"><?php echo $row['nombre_modelo']; ?></h5>
+                            
+                            <!-- MOSTRAR ESTRELLAS Y VALORACIÓN -->
+                            <div class="mb-2">
+                                <?php
+                                for ($i = 1; $i <= 5; $i++) {
+                                    if ($i <= round($promedio)) {
+                                        echo '<i class="bi bi-star-fill text-warning me-1 small"></i>';
+                                    } else {
+                                        echo '<i class="bi bi-star text-secondary me-1 small"></i>';
+                                    }
+                                }
+                                ?>
+                                <span class="small text-white-50">(<?php echo $total_resenas; ?>)</span>
+                            </div>
+
                             <span class="text-info fs-5">$<?php echo number_format($row['precio'], 2); ?></span>
                             <p class="small text-white-50 mt-2"><?php echo $row['variante_info'] ?? $row['descripcion']; ?></p>
                         </div>
@@ -140,29 +200,24 @@
                                     stripos($row['nombre_modelo'], 'Premium') !== false
                                     ||
                                     stripos($row['nombre_modelo'], '1 color') !== false
-                                    );
+                                );
                                 ?>
                                 
-                        <?php if ($requiere_personalizacion): ?>
-                            <a
-                             class="btn btn-identi mt-auto fw-bold"
-                             href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>"
-                             >  Personalizar y comprar
-                            </a>
-                            
-                    <?php else: ?>
-                        <a
-                        class="btn btn-identi mt-auto fw-bold"
-                        href="procesar_carrito.php?id=<?php echo $row['id_producto']; ?>"
-                        > Agregar al carrito
-                           </a>
-                           <?php endif; ?>
+                                <?php if ($requiere_personalizacion): ?>
+                                    <a class="btn btn-identi mt-auto fw-bold" href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>">
+                                        Personalizar y comprar
+                                    </a>
+                                <?php else: ?>
+                                    <a class="btn btn-identi mt-auto fw-bold" href="procesar_carrito.php?id=<?php echo $row['id_producto']; ?>">
+                                        Agregar al carrito
+                                    </a>
+                                <?php endif; ?>
                                 <a class="btn btn-outline-light btn-sm" href="detalle_producto.php?id=<?php echo $row['id_producto']; ?>">Ver detalles</a>
                             </div>
                         </div>
                     </div>
-                  </div>
-                 <?php 
+                </div>
+                <?php 
                     }
                 } 
                 ?>
@@ -171,6 +226,20 @@
     </section>
 
     <?php include 'includes/footer.php'; ?>
+
+<script>
+function cargarProductosOrdenados(criterio) {
+    // Actualiza la URL en el navegador sin recargar la página
+    history.pushState(null, '', `index.php?orden=${criterio}#productos`);
+
+    fetch(`obtener_productos.php?orden=${criterio}`)
+        .then(response => response.text())
+        .then(html => {
+            document.querySelector('#productos .row-cols-2').innerHTML = html;
+        })
+        .catch(error => console.error('Error al ordenar productos:', error));
+}
+</script>
 
     <script src="/Identiband/js/scripts.js"></script>
 

@@ -39,7 +39,50 @@ $resultado = mysqli_query($conexion, $query);
     <h2 class="fw-bold mb-4 mt-5 text-info">
         <i class="bi bi-cart3"></i> Tu Carrito
     </h2>
+<?php
+    // Obtenemos el mínimo de envío gratis para la barra de progreso
+    $config_progress_query = mysqli_query($conexion, "SELECT envio_gratis FROM configuracion LIMIT 1");
+    $config_progress = mysqli_fetch_assoc($config_progress_query);
+    $meta_envio = floatval($config_progress['envio_gratis']);
+    
+    // Si $subtotal_general ya fue calculado antes o después, aseguramos su uso. 
+    // Como el resumen está abajo, calculamos el subtotal aquí de forma rápida para la barra:
+    $subtotal_barra = 0;
+    // Si la consulta principal ya corrió, podemos recorrer o calcular. 
+    // Para evitar duplicar lógica, podemos mover la consulta del mínimo antes o calcularlo aquí:
+    $query_barra = "SELECT c.cantidad, p.precio FROM carrito c JOIN productos p ON c.id_producto = p.id_producto WHERE c.id_usuario = $usuario_id";
+    $res_barra = mysqli_query($conexion, $query_barra);
+    while($it = mysqli_fetch_assoc($res_barra)) {
+        $subtotal_barra += $it['precio'] * $it['cantidad'];
+    }
 
+    $porcentaje = ($meta_envio > 0) ? min(100, ($subtotal_barra / $meta_envio) * 100) : 100;
+    $faltante = max(0, $meta_envio - $subtotal_barra);
+    ?>
+
+    <!-- BARRA DE PROGRESO DE ENVÍO GRATIS -->
+    <div class="card bg-dark border-secondary p-3 mb-4 shadow-sm">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="fw-semibold text-light">
+                <?php if ($subtotal_barra >= $meta_envio): ?>
+                    <i class="bi bi-check-circle-fill text-success"></i> ¡Felicidades! Tienes <span class="text-success">envío gratis</span>.
+                <?php else: ?>
+                    <i class="bi bi-truck text-info"></i> Agrega <span class="text-info fw-bold">$<?php echo number_format($faltante, 2); ?> MXN</span> más para obtener <span class="text-info">envío gratis</span>.
+                <?php endif; ?>
+            </span>
+            <span class="small text-white-50"><?php echo round($porcentaje); ?>%</span>
+        </div>
+        <div class="progress" style="height: 10px; background-color: #21262d;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" 
+                 style="width: <?php echo $porcentaje; ?>%; background: linear-gradient(135deg, var(--identi-primary), var(--identi-secondary));" 
+                 aria-valuenow="<?php echo $porcentaje; ?>" 
+                 aria-valuemin="0" 
+                 aria-valuemax="100">
+            </div>
+        </div>
+    </div>
+    
     <div class="row">
 
         <!-- Tabla de los productos. -->
