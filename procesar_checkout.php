@@ -84,7 +84,9 @@ if ($total_productos >= 1000) {
     $costo_envio = 79;
 }
 
-$monto_total = $total_productos + $costo_envio;
+// --- INTEGRACIÓN DEL CUPÓN EN EL TOTAL ---
+$descuento = $_SESSION['descuento_aplicado'] ?? 0;
+$monto_total = max(0, ($total_productos + $costo_envio) - $descuento);
 
 // Guardar la dirección
 mysqli_query(
@@ -144,6 +146,19 @@ foreach ($productos_guardar as $producto) {
 
 // Vaciar carrito después de pagar
 mysqli_query($conexion, "DELETE FROM carrito WHERE id_usuario = $id_usuario");
+
+// --- ACTUALIZAR CONTADOR DE USOS DEL CUPÓN Y LIMPIAR SESIÓN ---
+if (!empty($_SESSION['cupon_codigo'])) {
+    $codigo_cupon = mysqli_real_escape_string($conexion, $_SESSION['cupon_codigo']);
+
+    mysqli_query(
+        $conexion,
+        "UPDATE cupones SET usos_actuales = usos_actuales + 1 WHERE codigo = '$codigo_cupon'"
+    );
+
+    unset($_SESSION['cupon_codigo']);
+    unset($_SESSION['descuento_aplicado']);
+}
 
 // --- ENVIAR CORREO DE CONFIRMACIÓN CON PHPMAILER ---
 if (!empty($correo_usuario)) {

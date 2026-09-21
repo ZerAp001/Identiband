@@ -107,6 +107,16 @@ $current = basename($_SERVER['PHP_SELF']);
         </a>
     </li>
 
+   <li>
+    <a href="/IDENTIBAND/admin/cupones/index.php"
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/cupones/') !== false 
+               ? 'active' : '' ?>">
+
+            <i class="bi bi-ticket-perforated-fill"></i>
+           Cupones
+        </a>
+    </li>
+
     <li>
     <a href="/IDENTIBAND/admin/reportes/index.php"
        class="<?= strpos($_SERVER['PHP_SELF'], '/admin/reportes/') !== false
@@ -116,6 +126,17 @@ $current = basename($_SERVER['PHP_SELF']);
          Reportes
        </a>
      </li>
+
+    <li>
+    <a href="/IDENTIBAND/admin/insumos/index.php" 
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/insumos/') !== false 
+               ? 'active' : '' ?>">
+        
+        <i class="bi bi-box-seam-fill"></i>
+        Materia Prima
+    </a>
+</li>
+
 </ul>
 
     </aside>
