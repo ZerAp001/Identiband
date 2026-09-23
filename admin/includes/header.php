@@ -137,6 +137,39 @@ $current = basename($_SERVER['PHP_SELF']);
     </a>
 </li>
 
+<li>
+    <a href="/IDENTIBAND/admin/produccion/index.php" 
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/produccion/') !== false ? 'active' : '' ?>">
+        
+        <i class="bi bi-tools"></i>
+        Taller
+    </a>
+</li>
+
+<li>
+    <a href="/IDENTIBAND/admin/envios/index.php" 
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/envios/') !== false ? 'active' : '' ?>">
+        <i class="bi bi-truck"></i>
+        Rastreo de envíos
+    </a>
+</li>
+
+<li>
+    <a href="/IDENTIBAND/admin/proveedores/index.php" 
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/proveedores/') !== false ? 'active' : '' ?>">
+        <i class="bi bi-building"></i>
+        Proveedores
+    </a>
+</li>
+
+<li>
+    <a href="/IDENTIBAND/admin/calidad/index.php" 
+       class="<?= strpos($_SERVER['PHP_SELF'], '/admin/calidad/') !== false ? 'active' : '' ?>">
+        <i class="bi bi-qr-code-scan"></i>
+        Calidad & NFC UID
+    </a>
+</li>
+
 </ul>
 
     </aside>

@@ -99,14 +99,42 @@ $total_final = max(0, ($subtotal_general + $costo_envio) - $descuento);
                     </div>
                 </div>
 
+                <!-- SECCIÓN DE MÉTODO DE PAGO CON DESPLIEGUE DINÁMICO -->
                 <div class="card bg-dark border-secondary p-4 shadow">
-                    <h4 class="text-info mb-3">Método de pago</h4>
-                    <select name="metodo_pago" class="form-select bg-dark text-light border-secondary" required>
+                    <h4 class="text-info mb-3"><i class="bi bi-wallet2"></i> Método de pago</h4>
+                    
+                    <select name="metodo_pago" id="metodo_pago" class="form-select bg-dark text-light border-secondary" required onchange="mostrarMetodoPago()">
                         <option value="">Selecciona método de pago</option>
                         <option value="tarjeta">Tarjeta de Crédito / Débito</option>
                         <option value="paypal">PayPal</option>
                         <option value="oxxo">Pago en OXXO</option>
                     </select>
+
+                    <!-- OPCCIÓN PAYPAL (Solicita correo de PayPal) -->
+                    <div id="campo_paypal" class="d-none mt-3 p-3 bg-dark border border-secondary rounded">
+                        <label class="form-label text-light fw-bold"><i class="bi bi-paypal text-primary"></i> Correo de tu cuenta PayPal</label>
+                        <input type="email" name="email_paypal" id="email_paypal" class="form-control bg-dark text-light border-secondary" placeholder="ejemplo@paypal.com">
+                        <small class="text-white-50 mt-1 d-block">Serás redirigido a la plataforma de PayPal para autorizar el pago con esta cuenta.</small>
+                    </div>
+
+                    <!-- OPCIÓN TARJETA -->
+                    <div id="campo_tarjeta" class="d-none mt-3 p-3 bg-dark border border-secondary rounded">
+                        <label class="form-label text-light fw-bold"><i class="bi bi-credit-card-fill text-info"></i> Datos de la tarjeta</label>
+                        <input type="text" name="numero_tarjeta" class="form-control bg-dark text-light border-secondary mb-2" placeholder="0000 0000 0000 0000">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <input type="text" name="expiracion" class="form-control bg-dark text-light border-secondary" placeholder="MM/AA">
+                            </div>
+                            <div class="col-6">
+                                <input type="password" name="cvv" class="form-control bg-dark text-light border-secondary" placeholder="CVV">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- OPCIÓN OXXO -->
+                    <div id="campo_oxxo" class="d-none mt-3 p-3 bg-dark border border-secondary rounded">
+                        <p class="mb-0 text-white-50"><i class="bi bi-shop text-warning"></i> Se generará una ficha de pago digital para presentar en cualquier sucursal OXXO.</p>
+                    </div>
                 </div>
             </div>
 
@@ -168,5 +196,35 @@ $total_final = max(0, ($subtotal_general + $costo_envio) - $descuento);
         </div>
     </form>
 </div>
+
+<!-- SCRIPT JAVASCRIPT PARA DESPLIEGUE DINÁMICO DE CAMPOS DE PAGO -->
+<script>
+function mostrarMetodoPago() {
+    const metodo = document.getElementById('metodo_pago').value;
+    
+    const divPaypal = document.getElementById('campo_paypal');
+    const divTarjeta = document.getElementById('campo_tarjeta');
+    const divOxxo = document.getElementById('campo_oxxo');
+    const inputEmailPaypal = document.getElementById('email_paypal');
+
+    // Ocultar todos los campos por defecto
+    divPaypal.classList.add('d-none');
+    divTarjeta.classList.add('d-none');
+    divOxxo.classList.add('d-none');
+    
+    // Desactivar requerido en paypal
+    inputEmailPaypal.required = false;
+
+    // Mostrar contenedor según la opción seleccionada
+    if (metodo === 'paypal') {
+        divPaypal.classList.remove('d-none');
+        inputEmailPaypal.required = true;
+    } else if (metodo === 'tarjeta') {
+        divTarjeta.classList.remove('d-none');
+    } else if (metodo === 'oxxo') {
+        divOxxo.classList.remove('d-none');
+    }
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>
